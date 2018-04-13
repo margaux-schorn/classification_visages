@@ -17,13 +17,17 @@ import tfmpl
 from datasets import dataset_factory
 from datasets.visages import labels_to_class_name
 from nets import nets_factory
+from nets.alexnet import alexnet_v2_arg_scope, alexnet_v2
+from nets.inception_resnet_v2 import inception_resnet_v2_arg_scope, inception_resnet_v2
 from nets.inception_v3 import inception_v3_arg_scope, inception_v3
+from nets.inception_v4 import inception_v4_arg_scope, inception_v4
+from nets.vgg import vgg_arg_scope, vgg_16
 from preprocessing import preprocessing_factory
 
 slim = tf.contrib.slim
 
 tf.app.flags.DEFINE_integer(
-    'batch_size', 50, 'The number of samples in each batch.')
+    'batch_size', 60, 'The number of samples in each batch.')
 
 tf.app.flags.DEFINE_integer(
     'max_num_batches', None,
@@ -79,6 +83,12 @@ tf.app.flags.DEFINE_string("chemin_liste_labels", "labels/liste_labels.txt", 'Pa
 
 FLAGS = tf.app.flags.FLAGS
 
+"""
+Paramètres du script : 
+    --dataset_dir "images/" --dataset_name "visages" --model_name "inception_v3" 
+    --eval_dir "output_eval/" --checkpoint_path "./output/" --eval_image_size 250 --batch_size 60
+"""
+
 
 def main(_):
     if not FLAGS.dataset_dir:
@@ -133,7 +143,7 @@ def main(_):
         # Define the model #
         ####################
         with slim.arg_scope(inception_v3_arg_scope()):
-            logits, _ = inception_v3(images, num_classes=dataset.num_classes, is_training=False)
+            logits, end_points = inception_v3(images, num_classes=dataset.num_classes, is_training=False)
 
         if FLAGS.moving_average_decay:
             variable_averages = tf.train.ExponentialMovingAverage(
@@ -173,7 +183,13 @@ def main(_):
 
             return fig
 
-        matrix = slim.metrics.confusion_matrix(labels, predictions, dataset.num_classes)
+        pred = tf.reshape(predictions, [-1,])
+        gt = tf.reshape(labels, [-1,])
+        indices = tf.squeeze(tf.where(tf.less_equal(gt, dataset.num_classes - 1)), 1) ## ignore all labels >= num_classes
+        gt = tf.cast(tf.gather(gt, indices), tf.int32)
+        pred = tf.gather(pred, indices)
+
+        matrix = slim.metrics.confusion_matrix(gt, pred, dataset.num_classes)
         updates_val = list(names_to_updates.values())
         updates_val.append(matrix)
         image_tensor = draw_confusion_matrix(matrix)

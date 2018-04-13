@@ -15,7 +15,11 @@ import tensorflow as tf
 from datasets import dataset_factory
 from deployment import model_deploy
 from nets import nets_factory
+from nets.alexnet import alexnet_v2_arg_scope, alexnet_v2
+from nets.inception_resnet_v2 import inception_resnet_v2_arg_scope, inception_resnet_v2
 from nets.inception_v3 import inception_v3_arg_scope, inception_v3
+from nets.inception_v4 import inception_v4_arg_scope, inception_v4
+from nets.vgg import vgg_arg_scope, vgg_16
 from preprocessing import preprocessing_factory
 
 slim = tf.contrib.slim
@@ -53,11 +57,11 @@ tf.app.flags.DEFINE_integer(
     'The frequency with which logs are print.')
 
 tf.app.flags.DEFINE_integer(
-    'save_summaries_secs', 60,
+    'save_summaries_secs', 90,
     'The frequency with which summaries are saved, in seconds.')
 
 tf.app.flags.DEFINE_integer(
-    'save_interval_secs', 60,
+    'save_interval_secs', 90,
     'The frequency with which the model is saved, in seconds.')
 
 tf.app.flags.DEFINE_integer(
@@ -180,7 +184,7 @@ tf.app.flags.DEFINE_string(
                                 'as `None`, then the model_name flag is used.')
 
 tf.app.flags.DEFINE_integer(
-    'batch_size', 32, 'The number of samples in each batch.')
+    'batch_size', 16, 'The number of samples in each batch.')
 
 tf.app.flags.DEFINE_integer(
     'train_image_size', None, 'Train image size')
@@ -211,6 +215,15 @@ tf.app.flags.DEFINE_boolean(
     'When restoring a checkpoint would ignore missing variables.')
 
 FLAGS = tf.app.flags.FLAGS
+
+"""
+Paramètres du script : 
+    --dataset_dir "images/" --dataset_name "visages" --model_name "inception_v3" 
+    --max_number_of_steps 70 --clone_on_cpu True --batch_size 16 --train_image_size 250 --train_dir "output/"
+
+Accès à tensorboard : 
+    tensorboard --logdir=train:output/,eval:output_eval
+"""
 
 
 def _configure_learning_rate(num_samples_per_epoch, global_step):
@@ -330,7 +343,6 @@ def _get_init_fn():
         exclusions = [scope.strip()
                       for scope in FLAGS.checkpoint_exclude_scopes.split(',')]
 
-    # TODO(sguada) variables.filter_variables()
     variables_to_restore = []
     for var in slim.get_model_variables():
         excluded = False
@@ -341,7 +353,6 @@ def _get_init_fn():
         if not excluded:
             variables_to_restore.append(var)
 
-    # variables_to_restore = slim.get_variables(scope="InceptionV3")
     print(variables_to_restore)
 
     if tf.gfile.IsDirectory(FLAGS.checkpoint_path):
@@ -394,7 +405,7 @@ def main(_):
 
         # Create global_step
         with tf.device(deploy_config.variables_device()):
-            global_step = slim.create_global_step()
+            global_step = slim.get_or_create_global_step() # Modif pour pouvoir repartir d'un checkpoint
 
         ######################
         # Select the dataset #
@@ -436,11 +447,16 @@ def main(_):
 
             image = image_preprocessing_fn(image, train_image_size, train_image_size)
 
+            # TODO regarder avec tf.train.shuffle_batch
             images, labels = tf.train.batch(
                 [image, label],
                 batch_size=FLAGS.batch_size,
                 num_threads=FLAGS.num_preprocessing_threads,
                 capacity=5 * FLAGS.batch_size)
+
+            # définir le nom du noeud input
+            images = tf.identity(images, name="input_images")
+
             labels = slim.one_hot_encoding(
                 labels, dataset.num_classes - FLAGS.labels_offset)
             batch_queue = slim.prefetch_queue.prefetch_queue(
@@ -452,8 +468,12 @@ def main(_):
         def clone_fn(batch_queue):
             """Allows data parallelism by creating multiple clones of network_fn."""
             images, labels = batch_queue.dequeue()
+
+            # Utiliser cette technique et pas la générique, sinon une erreur survient
+
             with slim.arg_scope(inception_v3_arg_scope()):
                 logits, end_points = inception_v3(images, num_classes=dataset.num_classes, is_training=False)
+                print(logits.name)
 
             #############################
             # Specify the loss function #
@@ -549,7 +569,12 @@ def main(_):
                                            first_clone_scope))
 
         # Merge all summaries together.
-        summary_op = tf.summary.merge(list(summaries), name='summary_op')
+        # summary_op = tf.summary.merge(list(summaries), name='summary_op')
+        summary_op = tf.summary.merge_all()
+
+        # on définit l'utilisation gpu pour tensorflow
+        gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.8)
+        config = tf.ConfigProto(log_device_placement=False, gpu_options=gpu_options)
 
         # permet de créer des checkpoints de l'entrainement
         saver = tf.train.Saver(max_to_keep=5,
@@ -569,6 +594,7 @@ def main(_):
             init_fn=_get_init_fn(),
             summary_op=summary_op,
             saver=saver,
+            session_config=config,
             number_of_steps=FLAGS.max_number_of_steps,
             log_every_n_steps=FLAGS.log_every_n_steps,
             save_summaries_secs=FLAGS.save_summaries_secs,
@@ -577,4 +603,7 @@ def main(_):
 
 
 if __name__ == '__main__':
-    tf.app.run()
+    try:
+        tf.app.run()
+    except KeyboardInterrupt:
+        print("Interruption de l'entrainement...")

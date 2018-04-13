@@ -48,6 +48,8 @@ class LabelsExtractor:
         labels_image = labels_to_class_name(chemin_liste_labels)
         inv_labels_image = {v: k for k, v in labels_image.items()}
 
+        cpt_labels = {}  # Afin de vérifier le nombre de fois où un label est rencontré
+
         # Créer un fichier csv dans un dossier du projet
         with open(chemin_csv, "w") as fichier:
             fichier_csv = csv.writer(fichier)
@@ -80,9 +82,18 @@ class LabelsExtractor:
                                 # Ecrire une ligne : nom image - extension - hauteur - largeur - label
                                 fichier_csv.writerow([nom_image, extension_image, hauteur, largeur,
                                                       inv_labels_image[label_lower]])
+
+                                if label_lower not in cpt_labels.keys():
+                                    cpt_labels[label_lower] = 1
+                                else :
+                                    cpt_labels[label_lower] += 1
+
                             elif len(label_lower) > 0:
                                 # Avertissement : le label n'est pas renseigné dans la liste complète
                                 print("Label posant problème : {} (image {} )".format(label_lower, image))
                                 warnings.warn("\nAvertissement : le label de l'image n'est pas renseigné "
                                               "dans la liste des labels, \nil sera ignoré lors de la création du "
                                               "fichier csv")
+
+        for key in cpt_labels.keys():
+            print("Label {} : {}\n".format(key, cpt_labels[key]))

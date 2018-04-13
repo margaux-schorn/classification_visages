@@ -13,11 +13,11 @@ _FILE_PATTERN = 'labels/labels_records.tfrecord'
 
 CHEMIN_LISTE_LABELS = "labels/liste_labels.txt"
 
-SPLITS_TO_SIZES = {'train': 225, 'test': 75}
+SPLITS_TO_SIZES = {'train': 470, 'test': 155}
 
 _ITEMS_TO_DESCRIPTIONS = {
-    'image': 'A [250 x 250 x 3] color image.',
-    'label': 'A integer associate to a string value in liste_labels.txt',
+    'image': 'A [a x b x 3] color image. (a and b are dimension)',
+    'label': 'An integer associate to a string value in liste_labels.txt',
 }
 
 
