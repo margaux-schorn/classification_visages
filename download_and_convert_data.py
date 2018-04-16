@@ -48,6 +48,12 @@ tf.app.flags.DEFINE_string(
     'The path to the complete list of labels (associated to number)'
 )
 
+"""
+Paramètres pour l'exécution : 
+    --dataset_name "visages" --dataset_dir "/Users/margaux/datasets/visages_test/images"
+    --chemin_tfrecords "labels/labels_tfrecords.tfrecord" 
+    --labels_dir "/Users/margaux/datasets/visages_test/annotations"
+"""
 
 def main(_):
     if not FLAGS.dataset_name:

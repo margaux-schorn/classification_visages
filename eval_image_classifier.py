@@ -12,7 +12,8 @@ from __future__ import print_function
 
 import math
 import tensorflow as tf
-import tfmpl
+
+# import tfmpl
 
 from datasets import dataset_factory
 from datasets.visages import labels_to_class_name
@@ -83,20 +84,13 @@ tf.app.flags.DEFINE_string("chemin_liste_labels", "labels/liste_labels.txt", 'Pa
 
 FLAGS = tf.app.flags.FLAGS
 
-"""
-Paramètres du script : 
-    --dataset_dir "images/" --dataset_name "visages" --model_name "inception_v3" 
-    --eval_dir "output_eval/" --checkpoint_path "./output/" --eval_image_size 250 --batch_size 60
-"""
-
-
 def main(_):
     if not FLAGS.dataset_dir:
         raise ValueError('You must supply the dataset directory with --dataset_dir')
 
     tf.logging.set_verbosity(tf.logging.INFO)
     with tf.Graph().as_default():
-        tf_global_step = slim.get_or_create_global_step()
+        tf_global_step = tf.train.get_or_create_global_step()
 
         ######################
         # Select the dataset #
@@ -162,6 +156,7 @@ def main(_):
             'Accuracy': slim.metrics.streaming_accuracy(predictions, labels),
             'Recall_5': slim.metrics.streaming_sparse_recall_at_k(logits, labels, 5)
         })
+        """
 
         # ajout provenant d'un github tf-matplotlib
         @tfmpl.figure_tensor
@@ -193,11 +188,14 @@ def main(_):
         updates_val = list(names_to_updates.values())
         updates_val.append(matrix)
         image_tensor = draw_confusion_matrix(matrix)
-
+        
         summary_ops = []
         op = tf.summary.image("confusion_matrix", image_tensor, collections=[])
         summary_ops.append(op)
         tf.add_to_collection(tf.GraphKeys.SUMMARIES, op)
+"""
+        updates_val = list(names_to_updates.values())
+        summary_ops = []
 
         # Print the summaries to screen.
         for name, value in names_to_values.items():
@@ -215,16 +213,17 @@ def main(_):
             # This ensures that we make a single pass over all of the data.
             num_batches = math.ceil(dataset.num_samples / float(FLAGS.batch_size))
 
-        slim.evaluation.evaluation_loop(
-            master=FLAGS.master,
-            checkpoint_dir=FLAGS.checkpoint_path,
-            logdir=FLAGS.eval_dir,
-            num_evals=num_batches,
-            eval_op=updates_val,
-            summary_op=summary_op,
-            variables_to_restore=variables_to_restore,
-            timeout=100
-        )
+            slim.evaluation.evaluation_loop(
+                master=FLAGS.master,
+                checkpoint_dir=FLAGS.checkpoint_path,
+                logdir=FLAGS.eval_dir,
+                num_evals=num_batches,
+                eval_op=updates_val,
+                summary_op=summary_op,
+                eval_interval_secs=10,
+                variables_to_restore=variables_to_restore,
+                timeout=60
+            )
 
 
 if __name__ == '__main__':

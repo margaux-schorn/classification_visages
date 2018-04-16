@@ -40,5 +40,6 @@ class ExportInferenceGraphTest(tf.test.TestCase):
     export_inference_graph.main(None)
     self.assertTrue(gfile.Exists(output_file))
 
+
 if __name__ == '__main__':
   tf.test.main()

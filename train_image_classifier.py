@@ -57,11 +57,11 @@ tf.app.flags.DEFINE_integer(
     'The frequency with which logs are print.')
 
 tf.app.flags.DEFINE_integer(
-    'save_summaries_secs', 90,
+    'save_summaries_secs', 10,
     'The frequency with which summaries are saved, in seconds.')
 
 tf.app.flags.DEFINE_integer(
-    'save_interval_secs', 90,
+    'save_interval_secs', 10,
     'The frequency with which the model is saved, in seconds.')
 
 tf.app.flags.DEFINE_integer(
@@ -215,16 +215,6 @@ tf.app.flags.DEFINE_boolean(
     'When restoring a checkpoint would ignore missing variables.')
 
 FLAGS = tf.app.flags.FLAGS
-
-"""
-Paramètres du script : 
-    --dataset_dir "images/" --dataset_name "visages" --model_name "inception_v3" 
-    --max_number_of_steps 70 --clone_on_cpu True --batch_size 16 --train_image_size 250 --train_dir "output/"
-
-Accès à tensorboard : 
-    tensorboard --logdir=train:output/,eval:output_eval
-"""
-
 
 def _configure_learning_rate(num_samples_per_epoch, global_step):
     """Configures the learning rate.
@@ -473,7 +463,6 @@ def main(_):
 
             with slim.arg_scope(inception_v3_arg_scope()):
                 logits, end_points = inception_v3(images, num_classes=dataset.num_classes, is_training=False)
-                print(logits.name)
 
             #############################
             # Specify the loss function #
@@ -585,7 +574,7 @@ def main(_):
         ###########################
         # Kicks off the training. #
         ###########################
-        slim.learning.train(
+        predictions = slim.learning.train(
             train_tensor,
             local_init_op=tf.global_variables_initializer(),
             logdir=FLAGS.train_dir,
@@ -600,6 +589,9 @@ def main(_):
             save_summaries_secs=FLAGS.save_summaries_secs,
             save_interval_secs=FLAGS.save_interval_secs,
             sync_optimizer=optimizer if FLAGS.sync_replicas else None)
+
+        # TODO Essayer d'afficher les prédictions (par label ?)
+        print(predictions)
 
 
 if __name__ == '__main__':
