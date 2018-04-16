@@ -18,7 +18,7 @@ les scritps d'entrainement et d'évaluation.
     --labels_dir "<PATH TO ANNOTATIONS DIR>" 
     --labels_list "labels/liste_labels.txt" # Précisé par défaut dans le script
 
-##Entrainement
+## Entrainement
 
 Le script train_image_classifier.py permet de réaliser l'entrainement du réseau. Il est
 nécessaire de lui indiquer les paramètres suivants : 
@@ -33,7 +33,7 @@ nécessaire de lui indiquer les paramètres suivants :
     --train_image_size 250 # Taille de sortie des images (pour le redimensionnement)
     --train_dir "output/"
 
-####Remarque
+#### Remarque
 
 Si on souhaite modifier l'architecture du réseau employée (par exemple par VGG16),
 il faut modifier le code suivant :
@@ -45,7 +45,7 @@ il faut modifier le code suivant :
 Il suffit de remplacer l'instruction inception_resnet_v2_arg_scope() par la méthode
 correspondante dans l'autre architecture, et idem pour inception_resnet_v2().
 
-##Evaluation
+## Evaluation
 
 Le script eval_image_classifier.py permet de réaliser l'évaluation du réseau. Il est
 nécessaire de lui indiquer les paramètres suivants : 
@@ -58,12 +58,12 @@ nécessaire de lui indiquer les paramètres suivants :
     --eval_image_size 250 # Taille de sortie des images (pour le redimensionnement)
     --batch_size 60
 
-####Attention : 
+#### Attention : 
 Oublier le paramètre eval_image_size 250 peut donner lieu à l'apparition d'erreurs
 lors de l'exécution du script indiquant un problème de dimensions des Tensors.
 
 
-##Visualiser l'entrainement et l'évaluation
+## Visualiser l'entrainement et l'évaluation
 
 Afin d'afficher la progression du réseau durant l'exécution des scripts, 
 il est possible d'employer Tensorboard en exécutant dans un terminal la commande
@@ -73,6 +73,6 @@ il est possible d'employer Tensorboard en exécutant dans un terminal la command
     # Ce sont ces dossiers qui contiennent les fichiers utilisés par tensorboard. 
     tensorboard --logdir=train:output/,eval:output_eval/
     
-##Exporter le réseau
+## Exporter le réseau
 
 TODO, cette partie ne fonctionne pas encore.
