@@ -55,6 +55,7 @@ Paramètres pour l'exécution :
     --labels_dir "/Users/margaux/datasets/visages_test/annotations"
 """
 
+
 def main(_):
     if not FLAGS.dataset_name:
         raise ValueError('You must supply the dataset name with --dataset_name')

@@ -3,6 +3,8 @@ import os
 import io
 from PIL import Image
 
+from utils.csv_reader import CsvReader
+
 
 def _bytes_feature(value):
     return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
@@ -10,26 +12,6 @@ def _bytes_feature(value):
 
 def _int64_feature(value):
     return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
-
-
-def recuperer_lignes_csv(chemin_csv):
-    """Cette méthode permet de récupérer le contenu d'un fichier
-        csv et de place chaque élément d'une ligne dans un tuple.
-
-        Returns : une liste de tuples"""
-    lignes_csv = []
-
-    with open(chemin_csv) as csv:
-        for line in csv.readlines():
-            elements_separes = line.split(",")
-
-            if len(elements_separes) == 5:
-                lignes_csv.append((elements_separes[0], elements_separes[1],
-                                   elements_separes[2], elements_separes[3],
-                                   elements_separes[4].split('\n')[0]))  # Enlever le \n de fin de ligne
-
-        # print(lignes_csv)
-    return lignes_csv
 
 
 class CreatorTFRecords:
@@ -42,7 +24,7 @@ class CreatorTFRecords:
             image - label du dataset, inscrit dans un fichier CSV."""
 
         writer = tf.python_io.TFRecordWriter(self.chemin_tfrecords)
-        lignes_csv = recuperer_lignes_csv(chemin_csv)
+        lignes_csv = CsvReader.recuperer_lignes_csv(chemin_csv)
 
         print("Enregistrement du fichier TFRecords en cours...")
 

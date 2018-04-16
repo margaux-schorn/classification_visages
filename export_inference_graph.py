@@ -95,6 +95,15 @@ tf.app.flags.DEFINE_string(
 tf.app.flags.DEFINE_string(
     'dataset_dir', '', 'Directory to save intermediate dataset files to')
 
+tf.app.flags.DEFINE_string(
+    'path_to_csv', 'labels/labels.csv',
+    'The path to csv file'
+)
+tf.app.flags.DEFINE_string(
+    'chemin_liste_labels',
+    'labels/liste_labels.txt',
+    'Path to labels list')
+
 FLAGS = tf.app.flags.FLAGS
 
 """
@@ -110,7 +119,8 @@ def main(_):
     tf.logging.set_verbosity(tf.logging.INFO)
     with tf.Graph().as_default() as graph:
         dataset = dataset_factory.get_dataset(FLAGS.dataset_name, 'train',
-                                              FLAGS.dataset_dir)
+                                              FLAGS.dataset_dir, FLAGS.path_to_csv,
+                                              FLAGS.chemin_liste_labels)
         network_fn = nets_factory.get_network_fn(
             FLAGS.model_name,
             num_classes=(dataset.num_classes - FLAGS.labels_offset),
@@ -121,10 +131,33 @@ def main(_):
                                             image_size, 3])
 
         network_fn(placeholder)
+
+        # We retrieve our checkpoint fullpath
+        checkpoint = tf.train.get_checkpoint_state("output/")
+        input_checkpoint = checkpoint.model_checkpoint_path
+
+        # We import the meta graph and retrieve a Saver
+        saver = tf.train.import_meta_graph(input_checkpoint + '.meta', clear_devices=True)
+        output_node_names = "InceptionV3/Logits/SpatialSqueeze,input_images"
         graph_def = graph.as_graph_def()
 
-        with gfile.GFile(FLAGS.output_file, 'wb') as f:
-            f.write(graph_def.SerializeToString())
+        # We start a session and restore the graph weights
+        with tf.Session() as sess:
+            saver.restore(sess, input_checkpoint)
+
+            sess.run(tf.global_variables_initializer())
+
+            # We use a built-in TF helper to export variables to constants
+            output_graph_def = tf.graph_util.convert_variables_to_constants(
+                sess,  # The session is used to retrieve the weights
+                graph_def,  # The graph_def is used to retrieve the nodes
+                output_node_names.split(",")  # The output node names are used to select the usefull nodes
+            )
+
+            # Finally we serialize and dump the output graph to the filesystem
+            with tf.gfile.GFile(FLAGS.output_file, "wb") as f:
+                f.write(output_graph_def.SerializeToString())
+            print("%d ops in the final graph." % len(output_graph_def.node))
 
 
 if __name__ == '__main__':

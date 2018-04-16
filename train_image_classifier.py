@@ -201,6 +201,11 @@ tf.app.flags.DEFINE_string(
     'The path to a checkpoint from which to fine-tune.')
 
 tf.app.flags.DEFINE_string(
+    'path_to_csv', 'labels/labels.csv',
+    'The path to csv file'
+)
+
+tf.app.flags.DEFINE_string(
     'checkpoint_exclude_scopes', None,
     'Comma-separated list of scopes of variables to exclude when restoring '
     'from a checkpoint.')
@@ -214,7 +219,13 @@ tf.app.flags.DEFINE_boolean(
     'ignore_missing_vars', False,
     'When restoring a checkpoint would ignore missing variables.')
 
+tf.app.flags.DEFINE_string(
+    'chemin_liste_labels',
+    'labels/liste_labels.txt',
+    'Path to labels list')
+
 FLAGS = tf.app.flags.FLAGS
+
 
 def _configure_learning_rate(num_samples_per_epoch, global_step):
     """Configures the learning rate.
@@ -400,9 +411,9 @@ def main(_):
         ######################
         # Select the dataset #
         ######################
-        # TODO dans le cas du dataset personnalisé, le dataset dir n'est pas utilisé pour l'obtenir
         dataset = dataset_factory.get_dataset(
-            FLAGS.dataset_name, FLAGS.dataset_split_name, FLAGS.dataset_dir)
+            FLAGS.dataset_name, FLAGS.dataset_split_name, FLAGS.path_to_csv,
+            FLAGS.chemin_liste_labels)
 
         ######################
         # Select the network #
@@ -460,7 +471,6 @@ def main(_):
             images, labels = batch_queue.dequeue()
 
             # Utiliser cette technique et pas la générique, sinon une erreur survient
-
             with slim.arg_scope(inception_v3_arg_scope()):
                 logits, end_points = inception_v3(images, num_classes=dataset.num_classes, is_training=False)
 

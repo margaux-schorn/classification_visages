@@ -91,9 +91,9 @@ class LabelsExtractor:
                             elif len(label_lower) > 0:
                                 # Avertissement : le label n'est pas renseigné dans la liste complète
                                 print("Label posant problème : {} (image {} )".format(label_lower, image))
-                                warnings.warn("\nAvertissement : le label de l'image n'est pas renseigné "
+                                warnings.warn("Avertissement : le label de l'image n'est pas renseigné "
                                               "dans la liste des labels, \nil sera ignoré lors de la création du "
                                               "fichier csv")
 
         for key in cpt_labels.keys():
-            print("Label {} : {}\n".format(key, cpt_labels[key]))
+            print("Présence du label '{}' : {}".format(key, cpt_labels[key]))

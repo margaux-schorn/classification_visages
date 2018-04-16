@@ -13,6 +13,20 @@ import cv2
 """
 
 
+def load_labels(chemin_liste):
+    with tf.gfile.Open(chemin_liste, 'r') as f:
+        lines = f.read()
+        lines = lines.split('\n')
+
+    labels_to_class_names = []
+    for line in lines:
+        index = line.index(':')
+        labels_to_class_names.append(line[index+1:])
+        # print(line[index+1:])
+
+    return labels_to_class_names
+
+
 def predict_image(image_path, frozen_model_path):
     image_size = 250
     num_channels = 3
@@ -28,6 +42,7 @@ def predict_image(image_path, frozen_model_path):
 
     # The input to the network is of shape [None image_size image_size num_channels]. Hence we reshape.
     x_batch = np.resize(images, (16, image_size, image_size, num_channels))
+    print(x_batch.shape)
 
     # Load graph with frozen graph
     with tf.gfile.GFile(frozen_model_path, "rb") as f:
@@ -36,33 +51,27 @@ def predict_image(image_path, frozen_model_path):
 
     with tf.Graph().as_default() as graph:
 
-        tf.import_graph_def(graph_def, name="")
+        y_pred, x = tf.import_graph_def(graph_def, return_elements=["InceptionV3/Logits/SpatialSqueeze:0",
+                                                                    "input:0"])
         # for op in graph.get_operations():
         #    print(op)
 
-        # NOW the complete graph with values has been restored
-        y_pred = graph.get_tensor_by_name("InceptionV3/Logits/SpatialSqueeze:0")
-
-        # Let's feed the images to the input placeholders
-        x = graph.get_tensor_by_name("input_images:0")
-        y_test_images = np.zeros((1, 2))
-
         sess = tf.Session(graph=graph)
-        """
-        with tf.Session(graph=tf.Graph()) as sess:
-            input, predictions = tf.train.import_meta_graph(
-                graph_def, return_elements=['InceptionV3/Logits/SpatialSqueeze:0',
-                                            'input:0'])
-            p_val = sess.run(predictions, feed_dict={input: x_batch})
-            results = np.squeeze(p_val)
 
-            for i in results:
-                print(results[i])
-
-        """
         # Creating the feed_dict that is required to be fed to calculate y_pred
         feed_dict_testing = {x: x_batch}
         result = sess.run(y_pred, feed_dict=feed_dict_testing)
+        sess.close()
+
+        # cette partie est dédiée à l'affichage des résultats
+        # TODO améliorer et décoder l'affichage
+        result = np.squeeze(result)
+
+        top_k = result.argsort()[-5:][::-1]
+        labels = load_labels('labels/liste_labels.txt')
+        for line in top_k:
+            print(line)
+
         print(result)
 
 

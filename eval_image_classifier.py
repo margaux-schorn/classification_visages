@@ -43,6 +43,11 @@ tf.app.flags.DEFINE_string(
     'checkpoint file.')
 
 tf.app.flags.DEFINE_string(
+    'path_to_csv', 'labels/labels.csv',
+    'The path to csv file'
+)
+
+tf.app.flags.DEFINE_string(
     'eval_dir', '/tmp/tfmodel/', 'Directory where the results are saved to.')
 
 tf.app.flags.DEFINE_integer(
@@ -79,8 +84,10 @@ tf.app.flags.DEFINE_float(
 tf.app.flags.DEFINE_integer(
     'eval_image_size', None, 'Eval image size')
 
-# flag personnalisé pour la matrice de confusion
-tf.app.flags.DEFINE_string("chemin_liste_labels", "labels/liste_labels.txt", 'Path to labels list')
+tf.app.flags.DEFINE_string(
+    'chemin_liste_labels',
+    'labels/liste_labels.txt',
+    'Path to labels list')
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -96,7 +103,7 @@ def main(_):
         # Select the dataset #
         ######################
         dataset = dataset_factory.get_dataset(
-            FLAGS.dataset_name, FLAGS.dataset_split_name, FLAGS.dataset_dir)
+            FLAGS.dataset_name, FLAGS.dataset_split_name, FLAGS.dataset_dir, FLAGS.path_to_csv, FLAGS.chemin_liste_labels)
 
         ####################
         # Select the model #
