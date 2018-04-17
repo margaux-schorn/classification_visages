@@ -8,8 +8,8 @@ Le script download_and_convert_data.py permet de créer un fichier csv
 contenant toutes les associations images-annotations, si ce fichier 
 n'existe pas pour le chemin indiqué. 
 
-Le csv est ensuite utilisé afin de créer un fichier tfrecord qui pourra être lu par
-les scritps d'entrainement et d'évaluation. 
+Le csv est ensuite utilisé afin de créer un fichier tfrecord qui 
+pourra être lu par les scripts d'entrainement et d'évaluation. 
 
     --dataset_name "visages" 
     --dataset_dir "<PATH TO IMAGES DIR>" 
@@ -17,6 +17,12 @@ les scritps d'entrainement et d'évaluation.
     --chemin_tfrecords "labels/labels_tfrecords.tfrecord" # Le fichier tfrecord qui sera créé
     --labels_dir "<PATH TO ANNOTATIONS DIR>" 
     --labels_list "labels/liste_labels.txt" # Précisé par défaut dans le script
+
+#### Remarque :
+Il est nécessaire d'exécuter ce script avant tout autre, car il permet 
+de créer le fichier tfrecord, qui est abscent du repository. Cela 
+signifie donc qu'il est essentiel d'indiquer un chemin vers un dataset
+afin d'encoder les images dans le fichier tfrecord.
 
 ## Entrainement
 
@@ -32,8 +38,13 @@ nécessaire de lui indiquer les paramètres suivants :
     --batch_size 16 
     --train_image_size 250 # Taille de sortie des images (pour le redimensionnement)
     --train_dir "output/"
+     
+    # Les deux paramètres suivants ne sont nécessaire que si vous avez
+    # précisé un nom différent de celui par défaut
+    --path_to_csv "labels/labels.csv"
+    --tfrecord_file "labels/labels_tfrecords.tfrecord"
 
-#### Remarque
+#### Remarque :
 
 Si on souhaite modifier l'architecture du réseau employée (par exemple par VGG16),
 il faut modifier le code suivant :
@@ -44,6 +55,10 @@ il faut modifier le code suivant :
 
 Il suffit de remplacer l'instruction inception_resnet_v2_arg_scope() par la méthode
 correspondante dans l'autre architecture, et idem pour inception_resnet_v2().
+
+`Initialement, une fonction générique (provenant du code de recherches de Tf-Slim) permettait de déterminer selon le 
+paramètre "model_name" qu'elle méthodes employées, mais son utilisation
+provoquait des erreurs d'exécution.`
 
 ## Evaluation
 
@@ -57,6 +72,11 @@ nécessaire de lui indiquer les paramètres suivants :
     --checkpoint_path "output/" 
     --eval_image_size 250 # Taille de sortie des images (pour le redimensionnement)
     --batch_size 60
+     
+    # Les deux paramètres suivants ne sont nécessaire que si vous avez
+    # précisé un nom différent de celui par défaut
+    --path_to_csv "labels/labels.csv"
+    --tfrecord_file "labels/labels_tfrecords.tfrecord"
 
 #### Attention : 
 Oublier le paramètre eval_image_size 250 peut donner lieu à l'apparition d'erreurs

@@ -93,12 +93,15 @@ tf.app.flags.DEFINE_string(
     'output_file', '', 'Where to save the resulting file to.')
 
 tf.app.flags.DEFINE_string(
-    'dataset_dir', '', 'Directory to save intermediate dataset files to')
-
-tf.app.flags.DEFINE_string(
     'path_to_csv', 'labels/labels.csv',
     'The path to csv file'
 )
+
+tf.app.flags.DEFINE_string(
+    'tfrecord_file', 'labels/labels_records.tfrecord',
+    'The path to tfrecord file'
+)
+
 tf.app.flags.DEFINE_string(
     'chemin_liste_labels',
     'labels/liste_labels.txt',
@@ -119,7 +122,7 @@ def main(_):
     tf.logging.set_verbosity(tf.logging.INFO)
     with tf.Graph().as_default() as graph:
         dataset = dataset_factory.get_dataset(FLAGS.dataset_name, 'train',
-                                              FLAGS.dataset_dir, FLAGS.path_to_csv,
+                                              FLAGS.path_to_csv, FLAGS.tfrecord_file,
                                               FLAGS.chemin_liste_labels)
         network_fn = nets_factory.get_network_fn(
             FLAGS.model_name,

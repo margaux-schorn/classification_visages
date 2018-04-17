@@ -63,12 +63,11 @@ def labels_to_class_name(chemin_liste):
     for line in lines:
         index = line.index(':')
         labels_to_class_names[int(line[:index])] = line[index + 1:]
-    print(labels_to_class_names)
 
     return labels_to_class_names
 
 
-def get_split(split_name, csv_file, chemin_liste_labels, reader=None):
+def get_split(split_name, csv_file, tfrecord_file, chemin_liste_labels, reader=None):
     """Cette méthode provient initialement du code du projet de recherches
     de TF-Slim du GitHub de Tensorflow. Elle a été adaptée pour n'employer
     que le code nécessaire pour mon dataset. """
@@ -80,7 +79,7 @@ def get_split(split_name, csv_file, chemin_liste_labels, reader=None):
     if split_name not in SPLITS_TO_SIZES:
         raise ValueError('split name %s was not recognized.' % split_name)
 
-    file_pattern = os.path.join(csv_file)
+    file_pattern = os.path.join(tfrecord_file)
     print(file_pattern)
 
     # Allowing None in the signature so that dataset_factory can use the default.

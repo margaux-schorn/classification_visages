@@ -48,6 +48,11 @@ tf.app.flags.DEFINE_string(
 )
 
 tf.app.flags.DEFINE_string(
+    'tfrecord_file', 'labels/labels_records.tfrecord',
+    'The path to tfrecord file'
+)
+
+tf.app.flags.DEFINE_string(
     'eval_dir', '/tmp/tfmodel/', 'Directory where the results are saved to.')
 
 tf.app.flags.DEFINE_integer(
@@ -59,9 +64,6 @@ tf.app.flags.DEFINE_string(
 
 tf.app.flags.DEFINE_string(
     'dataset_split_name', 'test', 'The name of the train/test split.')
-
-tf.app.flags.DEFINE_string(
-    'dataset_dir', None, 'The directory where the dataset files are stored.')
 
 tf.app.flags.DEFINE_integer(
     'labels_offset', 0,
@@ -91,10 +93,8 @@ tf.app.flags.DEFINE_string(
 
 FLAGS = tf.app.flags.FLAGS
 
-def main(_):
-    if not FLAGS.dataset_dir:
-        raise ValueError('You must supply the dataset directory with --dataset_dir')
 
+def main(_):
     tf.logging.set_verbosity(tf.logging.INFO)
     with tf.Graph().as_default():
         tf_global_step = tf.train.get_or_create_global_step()
@@ -103,7 +103,7 @@ def main(_):
         # Select the dataset #
         ######################
         dataset = dataset_factory.get_dataset(
-            FLAGS.dataset_name, FLAGS.dataset_split_name, FLAGS.dataset_dir, FLAGS.path_to_csv, FLAGS.chemin_liste_labels)
+            FLAGS.dataset_name, FLAGS.dataset_split_name, FLAGS.path_to_csv, FLAGS.tfrecord_file, FLAGS.chemin_liste_labels)
 
         ####################
         # Select the model #
