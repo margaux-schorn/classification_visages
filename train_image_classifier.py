@@ -429,7 +429,7 @@ def main(_):
         preprocessing_name = FLAGS.preprocessing_name or FLAGS.model_name
         image_preprocessing_fn = preprocessing_factory.get_preprocessing(
             preprocessing_name,
-            is_training=False)
+            is_training=True)
 
         ##############################################################
         # Create a dataset provider that loads data from the dataset #
@@ -572,7 +572,9 @@ def main(_):
 
         # on définit l'utilisation gpu pour tensorflow
         gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.8)
-        config = tf.ConfigProto(log_device_placement=False, gpu_options=gpu_options)
+
+        # ajout de "allow_soft_placement" selon la mise à jour du code du GitHub de recherches de TF-Slim
+        config = tf.ConfigProto(log_device_placement=False, gpu_options=gpu_options, allow_soft_placement=True)
 
         # permet de créer des checkpoints de l'entrainement
         saver = tf.train.Saver(max_to_keep=5,

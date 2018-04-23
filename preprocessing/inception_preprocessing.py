@@ -184,6 +184,7 @@ def preprocess_for_train(image, height, width, bbox,
     3-D float Tensor of distorted image used for training with range [-1, 1].
   """
   with tf.name_scope(scope, 'distort_image', [image, height, width, bbox]):
+    print(tf.shape(image))
     if bbox is None:
       bbox = tf.constant([0.0, 0.0, 1.0, 1.0],
                          dtype=tf.float32,

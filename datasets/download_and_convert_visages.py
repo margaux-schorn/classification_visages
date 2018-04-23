@@ -1,3 +1,5 @@
+import cv2
+import imageio as imageio
 import tensorflow as tf
 import os
 import io
@@ -31,24 +33,39 @@ class CreatorTFRecords:
         for ligne in lignes_csv:
             chemin_image = os.path.join(self.chemin_dataset, "{}.{}".format(ligne[0], ligne[1]))
 
+            """
             with tf.gfile.GFile(chemin_image, 'rb') as fid:
                 try:
                     encoded_jpg = fid.read()
                 except tf.errors.NotFoundError:
                     print('File {} not found'.format(chemin_image))
                     continue
+            """
 
-            encoded_jpg_io = io.BytesIO(encoded_jpg)
-            image = Image.open(encoded_jpg_io)
-            width, height = image.size
+            # encoded_jpg_io = io.BytesIO(encoded_jpg)
+            # image = Image.open(encoded_jpg_io)
+            image = cv2.imread(chemin_image)
 
-            print('Adding image {}x{} at path {} for label {}'.format(width, height, chemin_image, ligne[4].encode()))
+            # width, height = image.size
+            # In case of grayScale images the len(img.shape) == 2
+            if len(image.shape) > 2 and image.shape[2] == 4:
+                # convert the image from RGBA2RGB
+                image = cv2.cvtColor(image, cv2.COLOR_BGRA2BGR)
+
+            height, width, channels = image.shape
+
+            if channels != 3:
+                print("Nombre de channels de {} : {}".format(ligne[0], channels))
+
+            encoded_image = cv2.imencode('.{}'.format(ligne[1]), image)[1].tostring()
+
+            # print('Adding image {}x{} at path {} for label {}'.format(width, height, chemin_image, ligne[4].encode()))
 
             record = tf.train.Example(features=tf.train.Features(
                 feature={
                     'image/height': _int64_feature(height),
                     'image/width': _int64_feature(width),
-                    'image/encoded': _bytes_feature(encoded_jpg),
+                    'image/encoded': _bytes_feature(encoded_image),
                     'image/format': _bytes_feature('jpeg'.encode('utf8')),
                     'image/class/label': _int64_feature(int(ligne[4]))
                 }
