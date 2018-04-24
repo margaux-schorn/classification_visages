@@ -33,23 +33,11 @@ class CreatorTFRecords:
         for ligne in lignes_csv:
             chemin_image = os.path.join(self.chemin_dataset, "{}.{}".format(ligne[0], ligne[1]))
 
-            """
-            with tf.gfile.GFile(chemin_image, 'rb') as fid:
-                try:
-                    encoded_jpg = fid.read()
-                except tf.errors.NotFoundError:
-                    print('File {} not found'.format(chemin_image))
-                    continue
-            """
-
-            # encoded_jpg_io = io.BytesIO(encoded_jpg)
-            # image = Image.open(encoded_jpg_io)
             image = cv2.imread(chemin_image)
 
-            # width, height = image.size
-            # In case of grayScale images the len(img.shape) == 2
+            # dans le cas ou l'image a une shape = 2, cela signifie que le nbre de channels est 1
             if len(image.shape) > 2 and image.shape[2] == 4:
-                # convert the image from RGBA2RGB
+                # conversion des channels (on supprime le alpha pour obtenir un simple BGR)
                 image = cv2.cvtColor(image, cv2.COLOR_BGRA2BGR)
 
             height, width, channels = image.shape
@@ -57,6 +45,7 @@ class CreatorTFRecords:
             if channels != 3:
                 print("Nombre de channels de {} : {}".format(ligne[0], channels))
 
+            # encodage de l'image pour créer le record
             encoded_image = cv2.imencode('.{}'.format(ligne[1]), image)[1].tostring()
 
             # print('Adding image {}x{} at path {} for label {}'.format(width, height, chemin_image, ligne[4].encode()))
@@ -66,7 +55,7 @@ class CreatorTFRecords:
                     'image/height': _int64_feature(height),
                     'image/width': _int64_feature(width),
                     'image/encoded': _bytes_feature(encoded_image),
-                    'image/format': _bytes_feature('jpeg'.encode('utf8')),
+                    'image/format': _bytes_feature(ligne[1].encode('utf8')),
                     'image/class/label': _int64_feature(int(ligne[4]))
                 }
             ))

@@ -19,6 +19,7 @@ from nets.alexnet import alexnet_v2_arg_scope, alexnet_v2
 from nets.inception_resnet_v2 import inception_resnet_v2_arg_scope, inception_resnet_v2
 from nets.inception_v3 import inception_v3_arg_scope, inception_v3
 from nets.inception_v4 import inception_v4_arg_scope, inception_v4
+from tensorflow.python import debug as tf_debug
 from nets.vgg import vgg_arg_scope, vgg_16
 from preprocessing import preprocessing_factory
 
@@ -356,8 +357,6 @@ def _get_init_fn():
         if not excluded:
             variables_to_restore.append(var)
 
-    print(variables_to_restore)
-
     if tf.gfile.IsDirectory(FLAGS.checkpoint_path):
         checkpoint_path = tf.train.latest_checkpoint(FLAGS.checkpoint_path)
     else:
@@ -471,7 +470,7 @@ def main(_):
 
             # Utiliser cette technique et pas la générique, sinon une erreur survient
             with slim.arg_scope(inception_v3_arg_scope()):
-                logits, end_points = inception_v3(images, num_classes=dataset.num_classes, is_training=False)
+                logits, end_points = inception_v3(images, num_classes=dataset.num_classes, is_training=True)
 
             #############################
             # Specify the loss function #
@@ -582,6 +581,9 @@ def main(_):
                                write_version=2,
                                pad_step_number=False)
 
+        # debug
+
+
         ###########################
         # Kicks off the training. #
         ###########################
@@ -595,6 +597,7 @@ def main(_):
             summary_op=summary_op,
             saver=saver,
             session_config=config,
+            session_wrapper=tf_debug.LocalCLIDebugWrapperSession, # pour débuger le process de train
             number_of_steps=FLAGS.max_number_of_steps,
             log_every_n_steps=FLAGS.log_every_n_steps,
             save_summaries_secs=FLAGS.save_summaries_secs,

@@ -184,7 +184,6 @@ def preprocess_for_train(image, height, width, bbox,
     3-D float Tensor of distorted image used for training with range [-1, 1].
   """
   with tf.name_scope(scope, 'distort_image', [image, height, width, bbox]):
-    print(tf.shape(image))
     if bbox is None:
       bbox = tf.constant([0.0, 0.0, 1.0, 1.0],
                          dtype=tf.float32,
@@ -217,7 +216,7 @@ def preprocess_for_train(image, height, width, bbox,
     num_resize_cases = 1 if fast_mode else 4
     distorted_image = apply_with_random_selector(
         distorted_image,
-        lambda x, method: tf.image.resize_images(x, [height, width], method),
+        lambda x, method: tf.image.resize_images(x, [height, width]),  # tf.image.resize_images(x, [height, width], method)
         num_cases=num_resize_cases)
 
     if add_image_summaries:
