@@ -35,20 +35,12 @@ class CreatorTFRecords:
 
             image = cv2.imread(chemin_image)
 
-            # dans le cas ou l'image a une shape = 2, cela signifie que le nbre de channels est 1
-            if len(image.shape) > 2 and image.shape[2] == 4:
-                # conversion des channels (on supprime le alpha pour obtenir un simple BGR)
-                image = cv2.cvtColor(image, cv2.COLOR_BGRA2BGR)
-
             height, width, channels = image.shape
-
-            if channels != 3:
-                print("Nombre de channels de {} : {}".format(ligne[0], channels))
 
             # encodage de l'image pour créer le record
             encoded_image = cv2.imencode('.{}'.format(ligne[1]), image)[1].tostring()
 
-            # print('Adding image {}x{} at path {} for label {}'.format(width, height, chemin_image, ligne[4].encode()))
+            print('Adding image {}x{} at path {} for label {}'.format(width, height, chemin_image, ligne[4].encode()))
 
             record = tf.train.Example(features=tf.train.Features(
                 feature={

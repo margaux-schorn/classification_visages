@@ -445,6 +445,7 @@ def main(_):
             train_image_size = FLAGS.train_image_size or network_fn.default_image_size
 
             image = image_preprocessing_fn(image, train_image_size, train_image_size)
+            # image = tf.Print(image, [tf.shape(image), image], "Image :", summarize=1000)
 
             # TODO regarder avec tf.train.shuffle_batch
             images, labels = tf.train.batch(
@@ -452,7 +453,6 @@ def main(_):
                 batch_size=FLAGS.batch_size,
                 num_threads=FLAGS.num_preprocessing_threads,
                 capacity=5 * FLAGS.batch_size)
-
             # définir le nom du noeud input
             images = tf.identity(images, name="input_images")
 
@@ -597,7 +597,7 @@ def main(_):
             summary_op=summary_op,
             saver=saver,
             session_config=config,
-            session_wrapper=tf_debug.LocalCLIDebugWrapperSession, # pour débuger le process de train
+            # session_wrapper=tf_debug.LocalCLIDebugWrapperSession, # pour débuger le process de train
             number_of_steps=FLAGS.max_number_of_steps,
             log_every_n_steps=FLAGS.log_every_n_steps,
             save_summaries_secs=FLAGS.save_summaries_secs,

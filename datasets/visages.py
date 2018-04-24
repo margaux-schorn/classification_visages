@@ -94,7 +94,7 @@ def get_split(split_name, csv_file, tfrecord_file, chemin_liste_labels, reader=N
     }
 
     items_to_handlers = {
-        'image': slim.tfexample_decoder.Image(shape=[250, 250, 3]),
+        'image': slim.tfexample_decoder.Image(),
         'label': slim.tfexample_decoder.Tensor('image/class/label'),
     }
 

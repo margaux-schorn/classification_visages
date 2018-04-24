@@ -141,7 +141,7 @@ def main(_):
 
         # We import the meta graph and retrieve a Saver
         saver = tf.train.import_meta_graph(input_checkpoint + '.meta', clear_devices=True)
-        output_node_names = "InceptionV3/Logits/SpatialSqueeze,input_images"
+        output_node_names = "InceptionV3/Logits/SpatialSqueeze"  # essayer comme sortie InceptionV3/Predictions
         graph_def = graph.as_graph_def()
 
         # We start a session and restore the graph weights

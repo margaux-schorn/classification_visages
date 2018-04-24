@@ -144,7 +144,8 @@ def main(_):
         # Define the model #
         ####################
         with slim.arg_scope(inception_v3_arg_scope()):
-            logits, end_points = inception_v3(images, num_classes=dataset.num_classes, is_training=False)
+            logits, end_points = inception_v3(images, num_classes=dataset.num_classes, is_training=False,
+                                              reuse=tf.AUTO_REUSE)
 
         if FLAGS.moving_average_decay:
             variable_averages = tf.train.ExponentialMovingAverage(
