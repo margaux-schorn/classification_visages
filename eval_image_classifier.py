@@ -43,8 +43,8 @@ tf.app.flags.DEFINE_string(
     'checkpoint file.')
 
 tf.app.flags.DEFINE_string(
-    'path_to_csv', 'labels/labels.csv',
-    'The path to csv file'
+    'path_to_dataset', None,
+    'The path to dataset'
 )
 
 tf.app.flags.DEFINE_string(
@@ -96,6 +96,13 @@ FLAGS = tf.app.flags.FLAGS
 
 def main(_):
     tf.logging.set_verbosity(tf.logging.INFO)
+
+    if FLAGS.checkpoint_path is None:
+        raise ValueError("Missing parameter checkpoint_path.")
+
+    if FLAGS.path_to_dataset is None:
+        raise ValueError("Missing parameter path to dataset.")
+
     with tf.Graph().as_default():
         tf_global_step = tf.train.get_or_create_global_step()
 
@@ -103,7 +110,7 @@ def main(_):
         # Select the dataset #
         ######################
         dataset = dataset_factory.get_dataset(
-            FLAGS.dataset_name, FLAGS.dataset_split_name, FLAGS.path_to_csv, FLAGS.tfrecord_file, FLAGS.chemin_liste_labels)
+            FLAGS.dataset_name, FLAGS.dataset_split_name, FLAGS.path_to_dataset, FLAGS.tfrecord_file, FLAGS.chemin_liste_labels)
 
         ####################
         # Select the model #
@@ -162,7 +169,8 @@ def main(_):
         # Define the metrics:
         names_to_values, names_to_updates = slim.metrics.aggregate_metric_map({
             'Accuracy': slim.metrics.streaming_accuracy(predictions, labels),
-            'Recall_5': slim.metrics.streaming_sparse_recall_at_k(logits, labels, 5)
+            'Recall_5': slim.metrics.streaming_sparse_recall_at_k(logits, labels, 2)
+            # la dernière valeur doit être plus petite que le nombre total de labels
         })
         """
 
@@ -221,17 +229,17 @@ def main(_):
             # This ensures that we make a single pass over all of the data.
             num_batches = math.ceil(dataset.num_samples / float(FLAGS.batch_size))
 
-            slim.evaluation.evaluation_loop(
-                master=FLAGS.master,
-                checkpoint_dir=FLAGS.checkpoint_path,
-                logdir=FLAGS.eval_dir,
-                num_evals=num_batches,
-                eval_op=updates_val,
-                summary_op=summary_op,
-                eval_interval_secs=10,
-                variables_to_restore=variables_to_restore,
-                timeout=60
-            )
+        slim.evaluation.evaluation_loop(
+            master=FLAGS.master,
+            checkpoint_dir=FLAGS.checkpoint_path,
+            logdir=FLAGS.eval_dir,
+            num_evals=num_batches,
+            eval_op=updates_val,
+            summary_op=summary_op,
+            eval_interval_secs=10,
+            variables_to_restore=variables_to_restore,
+            timeout=60
+        )
 
 
 if __name__ == '__main__':

@@ -25,7 +25,7 @@ datasets_map = {
 }
 
 
-def get_dataset(name, split_name, csv_file,tfrecord_file, chemin_liste_labels, reader=None):
+def get_dataset(name, split_name, chemin_dataset ,tfrecord_file, chemin_liste_labels, reader=None):
     """Given a dataset name and a split_name returns a Dataset.
 
   Args:
@@ -46,7 +46,7 @@ def get_dataset(name, split_name, csv_file,tfrecord_file, chemin_liste_labels, r
         raise ValueError('Name of dataset unknown %s' % name)
     return datasets_map[name].get_split(
         split_name,
-        csv_file,
+        chemin_dataset,
         tfrecord_file,
         chemin_liste_labels,
         reader)

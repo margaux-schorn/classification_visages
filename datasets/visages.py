@@ -17,16 +17,15 @@ _ITEMS_TO_DESCRIPTIONS = {
 }
 
 
-def initialisation_repartition_dataset(chemin_csv):
-    lignes_csv = CsvReader.recuperer_lignes_csv(chemin_csv)
+def initialisation_repartition_dataset(chemin_dataset):
+    extensions = ['jpg', 'jpeg', 'png']
 
-    liste_images = []
-    nbre_images = 0
-    for line in lignes_csv:
-        nom_image = line[0]
-        if nom_image not in liste_images:
-            nbre_images += 1
-            liste_images.append(nom_image)
+    # parcourir les images du dataset
+    images = os.listdir(chemin_dataset)
+    images = [img for img in images if not img.startswith('.')]  # ignorer le fichier '.DSTORE'
+    images = [img for img in images if img.split('.')[1] in extensions]
+
+    nbre_images = len(images)
 
     nbre_eval = int(nbre_images/4)
     nbre_train = nbre_images - nbre_eval
@@ -64,16 +63,29 @@ def labels_to_class_name(chemin_liste):
         index = line.index(':')
         labels_to_class_names[int(line[:index])] = line[index + 1:]
 
+    labels_to_class_names = {}
+    i = 1
+    for line in lines:
+        index = line.index(':')
+        numero = int(line[:index])
+        # pour les tests avec nbre réduit de labels sans changer les nbre assignés dans le fichier
+        if numero != i:
+            numero = i
+        labels_to_class_names[numero] = line[index + 1:]
+        i += 1
+
+    print(labels_to_class_names)
+
     return labels_to_class_names
 
 
-def get_split(split_name, csv_file, tfrecord_file, chemin_liste_labels, reader=None):
+def get_split(split_name, chemin_dataset, tfrecord_file, chemin_liste_labels, reader=None):
     """Cette méthode provient initialement du code du projet de recherches
     de TF-Slim du GitHub de Tensorflow. Elle a été adaptée pour n'employer
     que le code nécessaire pour mon dataset. """
 
     # initialiser la répartition du dataset en fonction du nombre d'images
-    initialisation_repartition_dataset(csv_file)
+    initialisation_repartition_dataset(chemin_dataset)
 
     # vérifier que le nom de la partie du dataset demandé existe ('train' ou 'test')
     if split_name not in SPLITS_TO_SIZES:

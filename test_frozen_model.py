@@ -61,19 +61,22 @@ def predict_image(image_path, frozen_model_path):
         # Creating the feed_dict that is required to be fed to calculate y_pred
         feed_dict_testing = {x: x_batch}
         result = sess.run(y_pred, feed_dict=feed_dict_testing)
+        print(result)
         sess.close()
 
         # cette partie est dédiée à l'affichage des résultats
         # TODO améliorer et décoder l'affichage
         result = np.squeeze(result)
 
+
+"""
         top_k = result.argsort()[-5:][::-1]
         labels = load_labels('labels/liste_labels.txt')
         for line in top_k:
             print(line)
 
         print(result)
-
+"""
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

@@ -93,8 +93,8 @@ tf.app.flags.DEFINE_string(
     'output_file', '', 'Where to save the resulting file to.')
 
 tf.app.flags.DEFINE_string(
-    'path_to_csv', 'labels/labels.csv',
-    'The path to csv file'
+    'path_to_dataset', None,
+    'The path to dataset'
 )
 
 tf.app.flags.DEFINE_string(
@@ -119,10 +119,14 @@ FLAGS = tf.app.flags.FLAGS
 def main(_):
     if not FLAGS.output_file:
         raise ValueError('You must supply the path to save to with --output_file')
+
+    if FLAGS.path_to_dataset is None:
+        raise ValueError("Missing parameter path to dataset.")
+
     tf.logging.set_verbosity(tf.logging.INFO)
     with tf.Graph().as_default() as graph:
         dataset = dataset_factory.get_dataset(FLAGS.dataset_name, 'train',
-                                              FLAGS.path_to_csv, FLAGS.tfrecord_file,
+                                              FLAGS.path_to_dataset, FLAGS.tfrecord_file,
                                               FLAGS.chemin_liste_labels)
         network_fn = nets_factory.get_network_fn(
             FLAGS.model_name,

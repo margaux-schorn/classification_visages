@@ -19,9 +19,17 @@ def labels_to_class_name(chemin_liste):
         lines = lines.split('\n')
 
     labels_to_class_names = {}
+    i = 1
     for line in lines:
         index = line.index(':')
-        labels_to_class_names[int(line[:index])] = line[index + 1:]
+        numero = int(line[:index])
+        # pour les tests avec nbre réduit de labels sans changer les nbre assignés dans le fichier
+        if numero != i:
+            numero = i
+        labels_to_class_names[numero] = line[index + 1:]
+        i += 1
+
+    print(labels_to_class_names)
 
     return labels_to_class_names
 
@@ -59,9 +67,13 @@ def write_labels_in_tfrecord(cpt_labels, fichier_csv, image, img_annots,
         elif len(label_lower) > 0:
             # avertissement : le label n'est pas renseigné dans la liste complète
             print("Label posant problème : {} (image {} )".format(label_lower, image))
+            """
+            # mis en commentaire pour l'expérience avec 2 labels pour ne pas surcharger
+            # la console de messages
             warnings.warn("Avertissement : le label de l'image n'est pas renseigné "
                           "dans la liste des labels, \nil sera ignoré lors de la création du "
                           "fichier csv")
+            """
 
 
 class LabelsExtractor:
@@ -85,10 +97,11 @@ class LabelsExtractor:
         # récupérer la liste de labels depuis le fichier txt
         labels_image = labels_to_class_name(chemin_liste_labels)
         inv_labels_image = {v: k for k, v in labels_image.items()}
+        print(inv_labels_image)
 
         cpt_labels = {}  # afin de vérifier le nombre de fois où un label est rencontré
 
-        # rréer un fichier csv dans un dossier du projet
+        # créer un fichier csv dans un dossier du projet
         with open(chemin_csv, "w") as fichier:
             fichier_csv = csv.writer(fichier)
 
@@ -112,7 +125,7 @@ class LabelsExtractor:
             chemin_txt = os.path.join(chemin_annotations, "{}.{}".format(image_data['nom'], "txt"))
 
             if hauteur != largeur:
-                print("Hauteur et largeur différente : {}".format(chemin_txt))
+                print("INFO : Hauteur et largeur différente pour : {}".format(chemin_txt))
 
             # vérifier qu'on va analyser un fichier txt
             if os.path.isfile(chemin_txt):

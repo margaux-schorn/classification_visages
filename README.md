@@ -41,7 +41,7 @@ nécessaire de lui indiquer les paramètres suivants :
      
     # Les deux paramètres suivants ne sont nécessaire que si vous avez
     # précisé un nom différent de celui par défaut
-    --path_to_csv "labels/labels.csv"
+    --path_to_dataset "<PATH TO IMAGES DIR>"
     --tfrecord_file "labels/labels_tfrecords.tfrecord"
 
 #### Remarque :
@@ -51,7 +51,7 @@ il faut modifier le code suivant :
 
     with slim.arg_scope(inception_resnet_v2_arg_scope()):
         logits, end_points = inception_resnet_v2(images, 
-            num_classes=dataset.num_classes, is_training=False)
+            num_classes=dataset.num_classes, is_training=True)
 
 Il suffit de remplacer l'instruction inception_resnet_v2_arg_scope() par la méthode
 correspondante dans l'autre architecture, et idem pour inception_resnet_v2().
@@ -75,12 +75,23 @@ nécessaire de lui indiquer les paramètres suivants :
      
     # Les deux paramètres suivants ne sont nécessaire que si vous avez
     # précisé un nom différent de celui par défaut
-    --path_to_csv "labels/labels.csv"
+    --path_to_dataset "<PATH TO IMAGES DIR>"
     --tfrecord_file "labels/labels_tfrecords.tfrecord"
+    #### Remarque :
+
+Si on souhaite modifier l'architecture du réseau employée (par exemple par VGG16),
+il faut modifier le code suivant (elle doit être identique au script d'
+entrainement) :
+
+    with slim.arg_scope(inception_resnet_v2_arg_scope()):
+        logits, end_points = inception_resnet_v2(images, 
+            num_classes=dataset.num_classes, is_training=False)
 
 #### Attention : 
 Oublier le paramètre eval_image_size 250 peut donner lieu à l'apparition d'erreurs
 lors de l'exécution du script indiquant un problème de dimensions des Tensors.
+En effet, cette indication permet de donner une taille cible à la fonction
+de preprocessing, afin de redimensionner les images. 
 
 
 ## Visualiser l'entrainement et l'évaluation

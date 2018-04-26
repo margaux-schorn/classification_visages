@@ -58,11 +58,11 @@ tf.app.flags.DEFINE_integer(
     'The frequency with which logs are print.')
 
 tf.app.flags.DEFINE_integer(
-    'save_summaries_secs', 10,
+    'save_summaries_secs', 40,
     'The frequency with which summaries are saved, in seconds.')
 
 tf.app.flags.DEFINE_integer(
-    'save_interval_secs', 10,
+    'save_interval_secs', 40,
     'The frequency with which the model is saved, in seconds.')
 
 tf.app.flags.DEFINE_integer(
@@ -199,8 +199,8 @@ tf.app.flags.DEFINE_string(
     'The path to a checkpoint from which to fine-tune.')
 
 tf.app.flags.DEFINE_string(
-    'path_to_csv', 'labels/labels.csv',
-    'The path to csv file'
+    'path_to_dataset', None,
+    'The path to dataset'
 )
 
 tf.app.flags.DEFINE_string(
@@ -334,6 +334,9 @@ def _get_init_fn():
     if FLAGS.checkpoint_path is None:
         return None
 
+    if FLAGS.path_to_dataset is None:
+        raise ValueError("Missing parameter path to dataset.")
+
     # Warn the user if a checkpoint exists in the train_dir. Then we'll be
     # ignoring the checkpoint anyway.
     if tf.train.latest_checkpoint(FLAGS.train_dir):
@@ -410,7 +413,7 @@ def main(_):
         # Select the dataset #
         ######################
         dataset = dataset_factory.get_dataset(
-            FLAGS.dataset_name, FLAGS.dataset_split_name, FLAGS.path_to_csv,
+            FLAGS.dataset_name, FLAGS.dataset_split_name, FLAGS.path_to_dataset,
             FLAGS.tfrecord_file, FLAGS.chemin_liste_labels)
 
         ######################

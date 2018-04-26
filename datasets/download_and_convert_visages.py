@@ -1,9 +1,6 @@
 import cv2
-import imageio as imageio
 import tensorflow as tf
 import os
-import io
-from PIL import Image
 
 from utils.csv_reader import CsvReader
 
