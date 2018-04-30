@@ -50,8 +50,8 @@ def read_annotations(chemin_liste):
     return lines
 
 
-def write_labels_in_tfrecord(cpt_labels, fichier_csv, image, img_annots,
-                             inv_labels_image, image_data):
+def write_labels_in_csv(cpt_labels, fichier_csv, image, img_annots,
+                        inv_labels_image, image_data):
     for label in img_annots:
         label_lower = label.lower()
         if label_lower in inv_labels_image:
@@ -79,6 +79,7 @@ def write_labels_in_tfrecord(cpt_labels, fichier_csv, image, img_annots,
 class LabelsExtractor:
     def __init__(self, chemin_dataset):
         self.chemin_dataset = chemin_dataset
+        self.nbre_images = 0
 
     def extract(self, chemin_annotations, chemin_liste_labels, chemin_csv):
         """
@@ -97,7 +98,6 @@ class LabelsExtractor:
         # récupérer la liste de labels depuis le fichier txt
         labels_image = labels_to_class_name(chemin_liste_labels)
         inv_labels_image = {v: k for k, v in labels_image.items()}
-        print(inv_labels_image)
 
         cpt_labels = {}  # afin de vérifier le nombre de fois où un label est rencontré
 
@@ -108,6 +108,9 @@ class LabelsExtractor:
             # parcourir les images du dataset
             for image in os.listdir(self.chemin_dataset):
                 self.create_records_for_image(chemin_annotations, cpt_labels, fichier_csv, image, inv_labels_image)
+
+            print("Nombre d'images : {}".format(self.nbre_images))
+            fichier_csv.writerow(["nbre_images", self.nbre_images])
 
         for key in cpt_labels.keys():
             print("Présence du label '{}' : {}".format(key, cpt_labels[key]))
@@ -124,13 +127,11 @@ class LabelsExtractor:
 
             chemin_txt = os.path.join(chemin_annotations, "{}.{}".format(image_data['nom'], "txt"))
 
-            if hauteur != largeur:
-                print("INFO : Hauteur et largeur différente pour : {}".format(chemin_txt))
-
             # vérifier qu'on va analyser un fichier txt
             if os.path.isfile(chemin_txt):
                 # récupérer les labels associés à l'image
                 img_annots = read_annotations(chemin_txt)
 
                 # écrire les records pour chaque labels
-                write_labels_in_tfrecord(cpt_labels, fichier_csv, image, img_annots, inv_labels_image, image_data)
+                write_labels_in_csv(cpt_labels, fichier_csv, image, img_annots, inv_labels_image, image_data)
+                self.nbre_images += 1

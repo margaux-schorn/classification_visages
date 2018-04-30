@@ -199,8 +199,8 @@ tf.app.flags.DEFINE_string(
     'The path to a checkpoint from which to fine-tune.')
 
 tf.app.flags.DEFINE_string(
-    'path_to_dataset', None,
-    'The path to dataset'
+    'path_to_csv', "labels/labels.csv",
+    'The path to csv file'
 )
 
 tf.app.flags.DEFINE_string(
@@ -334,9 +334,6 @@ def _get_init_fn():
     if FLAGS.checkpoint_path is None:
         return None
 
-    if FLAGS.path_to_dataset is None:
-        raise ValueError("Missing parameter path to dataset.")
-
     # Warn the user if a checkpoint exists in the train_dir. Then we'll be
     # ignoring the checkpoint anyway.
     if tf.train.latest_checkpoint(FLAGS.train_dir):
@@ -413,7 +410,7 @@ def main(_):
         # Select the dataset #
         ######################
         dataset = dataset_factory.get_dataset(
-            FLAGS.dataset_name, FLAGS.dataset_split_name, FLAGS.path_to_dataset,
+            FLAGS.dataset_name, FLAGS.dataset_split_name, FLAGS.path_to_csv,
             FLAGS.tfrecord_file, FLAGS.chemin_liste_labels)
 
         ######################

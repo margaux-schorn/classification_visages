@@ -17,17 +17,11 @@ _ITEMS_TO_DESCRIPTIONS = {
 }
 
 
-def initialisation_repartition_dataset(chemin_dataset):
-    extensions = ['jpg', 'jpeg', 'png']
+def initialisation_repartition_dataset(chemin_csv):
+    ligne = CsvReader.recuperer_derniere_ligne_csv(chemin_csv)
+    nbre_images = int(ligne[1])
 
-    # parcourir les images du dataset
-    images = os.listdir(chemin_dataset)
-    images = [img for img in images if not img.startswith('.')]  # ignorer le fichier '.DSTORE'
-    images = [img for img in images if img.split('.')[1] in extensions]
-
-    nbre_images = len(images)
-
-    nbre_eval = int(nbre_images/4)
+    nbre_eval = int(nbre_images / 4)
     nbre_train = nbre_images - nbre_eval
 
     print("Nombre d'images pour l'entrainement : {}".format(nbre_train))
@@ -79,13 +73,13 @@ def labels_to_class_name(chemin_liste):
     return labels_to_class_names
 
 
-def get_split(split_name, chemin_dataset, tfrecord_file, chemin_liste_labels, reader=None):
+def get_split(split_name, chemin_csv, tfrecord_file, chemin_liste_labels, reader=None):
     """Cette méthode provient initialement du code du projet de recherches
     de TF-Slim du GitHub de Tensorflow. Elle a été adaptée pour n'employer
     que le code nécessaire pour mon dataset. """
 
     # initialiser la répartition du dataset en fonction du nombre d'images
-    initialisation_repartition_dataset(chemin_dataset)
+    initialisation_repartition_dataset(chemin_csv)
 
     # vérifier que le nom de la partie du dataset demandé existe ('train' ou 'test')
     if split_name not in SPLITS_TO_SIZES:
