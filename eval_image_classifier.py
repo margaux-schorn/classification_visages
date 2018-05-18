@@ -11,18 +11,11 @@ from __future__ import division
 from __future__ import print_function
 
 import math
+import os
 import tensorflow as tf
 
-# import tfmpl
-
-from datasets import dataset_factory
-from datasets.visages import labels_to_class_name
+from datasets import visages
 from nets import nets_factory
-from nets.alexnet import alexnet_v2_arg_scope, alexnet_v2
-from nets.inception_resnet_v2 import inception_resnet_v2_arg_scope, inception_resnet_v2
-from nets.inception_v3 import inception_v3_arg_scope, inception_v3
-from nets.inception_v4 import inception_v4_arg_scope, inception_v4
-from nets.vgg import vgg_arg_scope, vgg_16
 from preprocessing import preprocessing_factory
 
 slim = tf.contrib.slim
@@ -43,6 +36,10 @@ tf.app.flags.DEFINE_string(
     'checkpoint file.')
 
 tf.app.flags.DEFINE_string(
+    'model_name', "inception_v3",
+    'The architecture to be used')
+
+tf.app.flags.DEFINE_string(
     'path_to_csv', "labels/labels.csv",
     'The path to csv file'
 )
@@ -60,9 +57,6 @@ tf.app.flags.DEFINE_integer(
     'The number of threads used to create the batches.')
 
 tf.app.flags.DEFINE_string(
-    'dataset_name', 'imagenet', 'The name of the dataset to load.')
-
-tf.app.flags.DEFINE_string(
     'dataset_split_name', 'test', 'The name of the train/test split.')
 
 tf.app.flags.DEFINE_integer(
@@ -70,13 +64,6 @@ tf.app.flags.DEFINE_integer(
     'An offset for the labels in the dataset. This flag is primarily used to '
     'evaluate the VGG and ResNet architectures which do not use a background '
     'class for the ImageNet dataset.')
-
-tf.app.flags.DEFINE_string(
-    'model_name', 'inception_v3', 'The name of the architecture to evaluate.')
-
-tf.app.flags.DEFINE_string(
-    'preprocessing_name', None, 'The name of the preprocessing to use. If left '
-                                'as `None`, then the model_name flag is used.')
 
 tf.app.flags.DEFINE_float(
     'moving_average_decay', None,
@@ -93,6 +80,7 @@ tf.app.flags.DEFINE_string(
 
 FLAGS = tf.app.flags.FLAGS
 
+os.environ["CUDA_VISIBLE_DEVICES"] = '-1'
 
 def main(_):
     tf.logging.set_verbosity(tf.logging.INFO)
@@ -106,12 +94,14 @@ def main(_):
         ######################
         # Select the dataset #
         ######################
-        dataset = dataset_factory.get_dataset(
-            FLAGS.dataset_name, FLAGS.dataset_split_name, FLAGS.path_to_csv, FLAGS.tfrecord_file, FLAGS.chemin_liste_labels)
+        dataset = visages.get_split(FLAGS.dataset_split_name,
+                                    FLAGS.path_to_csv,
+                                    FLAGS.tfrecord_file,
+                                    FLAGS.chemin_liste_labels)
 
-        ####################
-        # Select the model #
-        ####################
+        ######################
+        # Select the network #
+        ######################
         network_fn = nets_factory.get_network_fn(
             FLAGS.model_name,
             num_classes=(dataset.num_classes - FLAGS.labels_offset),
@@ -131,8 +121,7 @@ def main(_):
         #####################################
         # Select the preprocessing function #
         #####################################
-        preprocessing_name = FLAGS.preprocessing_name or FLAGS.model_name
-        image_preprocessing_fn = preprocessing_factory.get_preprocessing(preprocessing_name, is_training=False)
+        image_preprocessing_fn = preprocessing_factory.get_preprocessing(FLAGS.model_name, is_training=False)
 
         eval_image_size = FLAGS.eval_image_size or network_fn.default_image_size
 
@@ -147,9 +136,7 @@ def main(_):
         ####################
         # Define the model #
         ####################
-        with slim.arg_scope(inception_v3_arg_scope()):
-            logits, end_points = inception_v3(images, num_classes=dataset.num_classes, is_training=False,
-                                              reuse=tf.AUTO_REUSE)
+        logits, _ = network_fn(images)
 
         if FLAGS.moving_average_decay:
             variable_averages = tf.train.ExponentialMovingAverage(
@@ -165,48 +152,9 @@ def main(_):
 
         # Define the metrics:
         names_to_values, names_to_updates = slim.metrics.aggregate_metric_map({
-            'Accuracy': slim.metrics.streaming_accuracy(predictions, labels),
-            'Recall_5': slim.metrics.streaming_sparse_recall_at_k(logits, labels, dataset.num_classes)
-            # la dernière valeur doit être plus petite que le nombre total de labels
+            'Accuracy': slim.metrics.streaming_accuracy(predictions, labels)
         })
-        """
 
-        # ajout provenant d'un github tf-matplotlib
-        @tfmpl.figure_tensor
-        def draw_confusion_matrix(matrix):
-            '''Draw confusion matrix for dataset.'''
-            fig = tfmpl.create_figure(figsize=(15, 15))
-            ax = fig.add_subplot(111)
-            ax.set_title('Matrice de confusion pour la classification des visages')
-
-            labels = labels_to_class_name(FLAGS.chemin_liste_labels)
-            labels_values = list(labels.values())
-            labels_key = list(labels.keys())
-
-            tfmpl.plots.confusion_matrix.draw(
-                ax, matrix,
-                axis_labels=[str(labels_values[x - 1]) for x in labels_key],
-                normalize=True
-            )
-
-            return fig
-
-        pred = tf.reshape(predictions, [-1,])
-        gt = tf.reshape(labels, [-1,])
-        indices = tf.squeeze(tf.where(tf.less_equal(gt, dataset.num_classes - 1)), 1) ## ignore all labels >= num_classes
-        gt = tf.cast(tf.gather(gt, indices), tf.int32)
-        pred = tf.gather(pred, indices)
-
-        matrix = slim.metrics.confusion_matrix(gt, pred, dataset.num_classes)
-        updates_val = list(names_to_updates.values())
-        updates_val.append(matrix)
-        image_tensor = draw_confusion_matrix(matrix)
-        
-        summary_ops = []
-        op = tf.summary.image("confusion_matrix", image_tensor, collections=[])
-        summary_ops.append(op)
-        tf.add_to_collection(tf.GraphKeys.SUMMARIES, op)
-"""
         updates_val = list(names_to_updates.values())
         summary_ops = []
 
@@ -218,13 +166,20 @@ def main(_):
             summary_ops.append(op)
             tf.add_to_collection(tf.GraphKeys.SUMMARIES, op)
 
-        summary_op = tf.summary.merge(summary_ops)
-
         if FLAGS.max_num_batches:
             num_batches = FLAGS.max_num_batches
         else:
             # This ensures that we make a single pass over all of the data.
             num_batches = math.ceil(dataset.num_samples / float(FLAGS.batch_size))
+
+        if tf.gfile.IsDirectory(FLAGS.checkpoint_path):
+            checkpoint_path = tf.train.latest_checkpoint(FLAGS.checkpoint_path)
+        else:
+            checkpoint_path = FLAGS.checkpoint_path
+
+        summary_op = tf.summary.merge(summary_ops)
+
+        tf.logging.info('Evaluating %s' % checkpoint_path)
 
         slim.evaluation.evaluation_loop(
             master=FLAGS.master,

@@ -19,12 +19,7 @@ from utils.labels_extractor import LabelsExtractor
 FLAGS = tf.app.flags.FLAGS
 
 tf.app.flags.DEFINE_string(
-    'dataset_name',
-    None,
-    'The name of the dataset to convert ("visages")')
-
-tf.app.flags.DEFINE_string(
-    'dataset_dir',
+    'image_dir',
     None,
     'The directory where the output TFRecords and temporary files are saved.')
 tf.app.flags.DEFINE_string(
@@ -47,32 +42,32 @@ tf.app.flags.DEFINE_string(
     "labels/liste_labels.txt",
     'The path to the complete list of labels (associated to number)'
 )
+tf.app.flags.DEFINE_string(
+    'classes',
+    "labels/liste_labels.txt",
+    'The path to the list of classes to import'
+)
 
 """
 Paramètres pour l'exécution : 
-    --dataset_name "visages" --dataset_dir "/Users/margaux/datasets/visages_test/images"
-    --chemin_tfrecords "labels/labels_tfrecords.tfrecord" 
+    --dataset_name "visages" --dataset_dir "/Users/margaux/datasets/visages_test/images"     
     --labels_dir "/Users/margaux/datasets/visages_test/annotations"
+    --classes ""
+    --chemin_tfrecords "labels/labels_tfrecords.tfrecord"
 """
 
 
 def main(_):
-    if not FLAGS.dataset_name:
-        raise ValueError('You must supply the dataset name with --dataset_name')
-    if not FLAGS.dataset_dir:
+    if not FLAGS.image_dir:
         raise ValueError('You must supply the dataset directory with --dataset_dir')
 
-    if FLAGS.dataset_name == 'visages':
-        if not os.path.isfile(FLAGS.chemin_csv):
-            # Création de l'extracteur des labels contenus dans les fichiers txt
-            extractor = LabelsExtractor(FLAGS.dataset_dir)
-            extractor.extract(FLAGS.labels_dir, FLAGS.labels_list, FLAGS.chemin_csv)
+    if not os.path.isfile(FLAGS.chemin_csv):
+        # Création de l'extracteur des labels contenus dans les fichiers txt
+        extractor = LabelsExtractor(FLAGS.image_dir)
+        extractor.extract(FLAGS.labels_dir, FLAGS.labels_list, FLAGS.chemin_csv)
 
-        creator = CreatorTFRecords(FLAGS.chemin_tfrecords, FLAGS.dataset_dir)
-        creator.create(FLAGS.chemin_csv)
-    else:
-        raise ValueError(
-            'dataset_name [%s] was not recognized.' % FLAGS.dataset_name)
+    creator = CreatorTFRecords(FLAGS.chemin_tfrecords, FLAGS.image_dir)
+    creator.create(FLAGS.chemin_csv, FLAGS.classes)
 
 
 if __name__ == '__main__':

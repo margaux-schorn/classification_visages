@@ -1,17 +1,9 @@
-# Copyright 2017 The TensorFlow Authors. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# This code come from the Tensorflow github, more precisely :
+#   https://github.com/tensorflow/models/tree/master/research/slim
+# It has been adapted to suit my project of faces classification.
+
 # ==============================================================================
+
 r"""Saves out a GraphDef containing the architecture of the model.
 
 To use it, run something like this, with a model name defined by slim:
@@ -59,13 +51,11 @@ from __future__ import print_function
 import tensorflow as tf
 
 from tensorflow.python.platform import gfile
-from datasets import dataset_factory
+from datasets import visages
 from nets import nets_factory
 
-slim = tf.contrib.slim
 
-tf.app.flags.DEFINE_string(
-    'model_name', 'inception_v3', 'The name of the architecture to save.')
+slim = tf.contrib.slim
 
 tf.app.flags.DEFINE_boolean(
     'is_training', False,
@@ -80,89 +70,52 @@ tf.app.flags.DEFINE_integer(
     'Batch size for the exported model. Defaulted to "None" so batch size can '
     'be specified at model runtime.')
 
-tf.app.flags.DEFINE_string('dataset_name', 'imagenet',
-                           'The name of the dataset to use with the model.')
-
-tf.app.flags.DEFINE_integer(
-    'labels_offset', 0,
-    'An offset for the labels in the dataset. This flag is primarily used to '
-    'evaluate the VGG and ResNet architectures which do not use a background '
-    'class for the ImageNet dataset.')
+tf.app.flags.DEFINE_string(
+    'csv_file',
+    "labels/labels.csv",
+    'The path to csv file')
 
 tf.app.flags.DEFINE_string(
-    'output_file', '', 'Where to save the resulting file to.')
+    'record_file',
+    'labels/labels_records.tfrecord',
+    'The path to tfrecord file')
 
 tf.app.flags.DEFINE_string(
-    'path_to_csv', "labels/labels.csv",
-    'The path to csv file'
-)
-
-tf.app.flags.DEFINE_string(
-    'tfrecord_file', 'labels/labels_records.tfrecord',
-    'The path to tfrecord file'
-)
-
-tf.app.flags.DEFINE_string(
-    'chemin_liste_labels',
+    'classes_file',
     'labels/liste_labels.txt',
     'Path to labels list')
 
-FLAGS = tf.app.flags.FLAGS
+tf.app.flags.DEFINE_string(
+    'output_file',
+    '',
+    'Where to save the resulting file to.')
 
-"""
-     Paramètres d'exécution : 
-        --output_file "inception_v3_inf_graph.pb" --model_name "inception_v3" 
-            --dataset_name "visages" --batch_size 16 --image_size 250
-"""
+tf.app.flags.DEFINE_string(
+    'model_name', "inception_v3",
+    'The architecture to be used')
+
+FLAGS = tf.app.flags.FLAGS
 
 
 def main(_):
     if not FLAGS.output_file:
         raise ValueError('You must supply the path to save to with --output_file')
-
     tf.logging.set_verbosity(tf.logging.INFO)
     with tf.Graph().as_default() as graph:
-        dataset = dataset_factory.get_dataset(FLAGS.dataset_name, 'train',
-                                              FLAGS.path_to_csv, FLAGS.tfrecord_file,
-                                              FLAGS.chemin_liste_labels)
+        dataset = visages.get_split("train", FLAGS.csv_file, FLAGS.record_file, FLAGS.classes_file)
+
         network_fn = nets_factory.get_network_fn(
             FLAGS.model_name,
-            num_classes=(dataset.num_classes - FLAGS.labels_offset),
+            num_classes=dataset.num_classes,
             is_training=FLAGS.is_training)
         image_size = FLAGS.image_size or network_fn.default_image_size
         placeholder = tf.placeholder(name='input', dtype=tf.float32,
-                                     shape=[FLAGS.batch_size, image_size,
-                                            image_size, 3])
-
+                                     shape=[FLAGS.batch_size, image_size, image_size, 3])
         network_fn(placeholder)
-
-        # We retrieve our checkpoint fullpath
-        checkpoint = tf.train.get_checkpoint_state("output/")
-        input_checkpoint = checkpoint.model_checkpoint_path
-
-        # We import the meta graph and retrieve a Saver
-        saver = tf.train.import_meta_graph(input_checkpoint + '.meta', clear_devices=True)
-        output_node_names = "InceptionV3/Logits/SpatialSqueeze"  # essayer comme sortie InceptionV3/Predictions
         graph_def = graph.as_graph_def()
-
-        # We start a session and restore the graph weights
-        with tf.Session() as sess:
-            saver.restore(sess, input_checkpoint)
-
-            sess.run(tf.global_variables_initializer())
-
-            # We use a built-in TF helper to export variables to constants
-            output_graph_def = tf.graph_util.convert_variables_to_constants(
-                sess,  # The session is used to retrieve the weights
-                graph_def,  # The graph_def is used to retrieve the nodes
-                output_node_names.split(",")  # The output node names are used to select the usefull nodes
-            )
-
-            # Finally we serialize and dump the output graph to the filesystem
-            with tf.gfile.GFile(FLAGS.output_file, "wb") as f:
-                f.write(output_graph_def.SerializeToString())
-            print("%d ops in the final graph." % len(output_graph_def.node))
+        with gfile.GFile(FLAGS.output_file, 'wb') as f:
+            f.write(graph_def.SerializeToString())
 
 
 if __name__ == '__main__':
-    tf.app.run()
+  tf.app.run()

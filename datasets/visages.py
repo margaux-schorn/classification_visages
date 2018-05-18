@@ -9,7 +9,7 @@ from utils.csv_reader import CsvReader
 
 slim = tf.contrib.slim
 
-SPLITS_TO_SIZES = {'train': 150, 'test': 50}
+SPLITS_TO_SIZES = {'train': 1000, 'test': 160}
 
 _ITEMS_TO_DESCRIPTIONS = {
     'image': 'A [a x b x 3] color image. (a and b are dimension)',

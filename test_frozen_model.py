@@ -1,87 +1,53 @@
-import argparse
-
-import tensorflow as tf
-import numpy as np
 import cv2
+import numpy as np
+import tensorflow as tf
 
-"""
-    Le code de base permettant de tester le 'frozen model'
-    provient du site cv-tricks.
-    
-    Paramètres d'exécution : 
-        --image_path "<chemin de l'image>" --frozen_model_path "output/frozen_model.pb"
-"""
+tf.app.flags.DEFINE_string(
+    'image_path',
+    None,
+    'The path to testing image')
 
+tf.app.flags.DEFINE_string(
+    'graph_path',
+    None,
+    'The path to exported model')
 
-def load_labels(chemin_liste):
-    with tf.gfile.Open(chemin_liste, 'r') as f:
-        lines = f.read()
-        lines = lines.split('\n')
+tf.app.flags.DEFINE_string(
+    'labels_path',
+    None,
+    'The path to the list of labels')
 
-    labels_to_class_names = []
-    for line in lines:
-        index = line.index(':')
-        labels_to_class_names.append(line[index+1:])
-        # print(line[index+1:])
+FLAGS = tf.app.flags.FLAGS
 
-    return labels_to_class_names
+# Read in the image_data
+images = []
 
+image = cv2.imread(FLAGS.image_path)
+image_data = np.array(image, dtype=np.uint8)
+image_data = image_data.astype('float32')
+image_data = np.multiply(image_data, 1.0 / 255.0)
 
-def predict_image(image_path, frozen_model_path):
-    image_size = 250
-    num_channels = 3
-    images = []
-    # Reading the image using OpenCV
-    image = cv2.imread(image_path)
-    # Resizing the image to our desired size and preprocessing will be done exactly as done during training
-    image = cv2.resize(image, (image_size, image_size), 0, 0, cv2.INTER_LINEAR)
-    images.append(image)
-    images = np.array(images, dtype=np.uint8)
-    images = images.astype('float32')
-    images = np.multiply(images, 1.0 / 255.0)
+image_data = np.resize(image_data, (32, 299, 299, 3))
 
-    # The input to the network is of shape [None image_size image_size num_channels]. Hence we reshape.
-    x_batch = np.resize(images, (16, image_size, image_size, num_channels))
-    print(x_batch.shape)
+# Loads label file, strips off carriage return
+label_lines = [line.rstrip() for line
+               in tf.gfile.GFile(FLAGS.labels_path)]
 
-    # Load graph with frozen graph
-    with tf.gfile.GFile(frozen_model_path, "rb") as f:
+with tf.Graph().as_default() as graph:
+    # Unpersists graph from file
+    with tf.gfile.FastGFile(FLAGS.graph_path, 'rb') as f:
         graph_def = tf.GraphDef()
         graph_def.ParseFromString(f.read())
+        _ = tf.import_graph_def(graph_def, name='')
 
-    with tf.Graph().as_default() as graph:
+    # Feed the image_data as input to the graph and get first prediction
+    with tf.Session(graph=graph) as sess:
+        softmax_tensor = sess.graph.get_tensor_by_name('InceptionV3/Predictions/Reshape_1:0')
+        predictions = sess.run(softmax_tensor,{'input:0': image_data})
 
-        y_pred, x = tf.import_graph_def(graph_def, return_elements=["InceptionV3/Logits/SpatialSqueeze:0",
-                                                                    "input:0"])
-        # for op in graph.get_operations():
-        #    print(op)
-
-        sess = tf.Session(graph=graph)
-
-        # Creating the feed_dict that is required to be fed to calculate y_pred
-        feed_dict_testing = {x: x_batch}
-        result = sess.run(y_pred, feed_dict=feed_dict_testing)
-        print(result)
-        sess.close()
-
-        # cette partie est dédiée à l'affichage des résultats
-        # TODO améliorer et décoder l'affichage
-        result = np.squeeze(result)
-
-
-"""
-        top_k = result.argsort()[-5:][::-1]
-        labels = load_labels('labels/liste_labels.txt')
-        for line in top_k:
-            print(line)
-
-        print(result)
-"""
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--image_path", type=str, help="Path to image that we want predict")
-    parser.add_argument("--frozen_model_path", type=str, help="Path to frozen model")
-    args = parser.parse_args()
-
-    predict_image(args.image_path, args.frozen_model_path)
+        # Sort to show labels of first prediction in order of confidence
+        top_k = predictions[0].argsort()[-len(predictions[0]):][::-1]
+        for node_id in top_k:
+            human_string = label_lines[node_id]
+            score = predictions[0][node_id]
+            print('%s (score = %.5f)' % (human_string, score))
